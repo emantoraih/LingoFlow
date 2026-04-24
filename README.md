@@ -1,92 +1,94 @@
 # LingoFlow Pro
 
-Executive-grade AI translation platform with triple-engine failover architecture.
+LingoFlow Pro is a web app for high-quality multilingual translation with automatic engine failover.
 
-**Engines:** DeepL (European languages) → Groq/Llama 3 (Asian/Indian/Arabic) → Gemini 1.5 Pro (fallback)  
-**Languages:** 110+ supported  
-**Features:** Voice input/output, register presets (Executive, Medical, Legal, Casual), translation history, auto-failover
+It is designed for professional use cases where translation reliability matters: if one provider fails due to quota, latency, or API errors, the app automatically retries with the next engine so users still get a result.
 
----
+## What This App Does
+
+- Translates text across 110+ languages
+- Uses best-fit AI engines with fallback logic:
+  - DeepL (primary for many European language pairs)
+  - Groq / Llama 3 (fast support for many Asian, Indian, and Arabic use cases)
+  - Gemini 1.5 Pro (universal fallback)
+- Supports voice workflow:
+  - Speech-to-text input (microphone)
+  - Text-to-speech read aloud output
+- Provides register presets:
+  - Executive
+  - Medical
+  - Legal
+  - Casual
+- Stores recent translation history in the UI
+
+## How It Works
+
+```text
+Browser UI (Next.js + Tailwind)
+  -> POST /api/translate
+     -> Engine router tries DeepL
+     -> if unavailable/error, tries Groq
+     -> if unavailable/error, tries Gemini
+     -> returns translated text + engine metadata
+```
+
+### Reliability Model
+
+LingoFlow Pro uses silent failover. Users do not need to manually switch providers when one service is down or rate-limited.
+
+### Security Model
+
+All API keys are read from server environment variables and are never exposed to the browser.
 
 ## Quick Start (Local)
 
-### 1. Install dependencies
+### 1) Install
+
 ```bash
 npm install
 ```
 
-### 2. Set up environment variables
-```bash
-cp .env.example .env.local
-# Open .env.local and add your API keys
+### 2) Configure environment variables
+
+Create `.env` (or `.env.local`) with:
+
+```env
+DEEPL_API_KEY=your_key_here
+GROQ_API_KEY=your_key_here
+GEMINI_API_KEY=your_key_here
 ```
 
-Required keys:
-- `DEEPL_API_KEY` — from https://www.deepl.com/pro-api
-- `GROQ_API_KEY` — from https://console.groq.com
-- `GEMINI_API_KEY` — from https://aistudio.google.com/app/apikey
+You can run with a subset of keys. The router uses whichever engines are configured.
 
-The app works with any subset of keys — it uses whichever engines are configured and skips the rest.
+### 3) Run
 
-### 3. Run locally
 ```bash
 npm run dev
-# Open http://localhost:3000
 ```
 
----
+Open `http://localhost:3000`.
 
-## Deploy to Vercel (One-click share link)
+## Deploy
 
-### Option A — Vercel CLI
-```bash
-npm install -g vercel
-vercel
-# Follow prompts, then add env vars in dashboard
-```
+This project is ready for Vercel deployment.
 
-### Option B — GitHub + Vercel Dashboard
-1. Push this folder to a new GitHub repo
-2. Go to https://vercel.com/new → import repo
-3. Add environment variables in Vercel project settings:
+1. Import the GitHub repo in Vercel, or deploy with Vercel CLI
+2. Add production environment variables:
    - `DEEPL_API_KEY`
    - `GROQ_API_KEY`
    - `GEMINI_API_KEY`
-4. Click Deploy → share the `*.vercel.app` URL
-
----
-
-## Architecture
-
-```
-Browser (React + Tailwind)
-  └─ POST /api/translate
-       └─ Engine Router (lib/router logic in route.ts)
-            ├─ DeepL SDK      (European languages, highest accuracy)
-            ├─ Groq SDK       (Asian/Indian/Arabic, speed-optimized)
-            └─ Gemini SDK     (Universal fallback)
-```
-
-**Silent failover:** If any engine returns an error (rate limit, quota, network), the API route automatically retries with the next engine — no user notification, no downtime.
-
-**Security:** All API keys are server-side only (`process.env`). They are never exposed to the browser.
-
----
+3. Deploy and share your `*.vercel.app` URL
 
 ## Register Presets
 
-| Preset | Use case | Prompt instruction |
-|---|---|---|
-| Executive | Business, academic communication | Formal institutional language |
-| Medical | Clinical notes, research papers | Precise clinical/scientific terminology, safety-critical |
-| Legal | Contracts, regulatory documents | Exact legal terminology, zero ambiguity |
-| Casual | Everyday communication | Natural conversational language |
+| Preset | Best for |
+|---|---|
+| Executive | Business and institutional communication |
+| Medical | Clinical and scientific terminology |
+| Legal | Contracts and compliance language |
+| Casual | Everyday conversational translation |
 
----
+## Notes
 
-## Notes for Medical & Academic Use
-
-- The **Medical** register uses enhanced prompting that explicitly flags drug names, anatomical terms, and diagnostic labels for preservation
-- Always verify AI translations of clinical content before distribution
-- API keys are server-side only — suitable for institutional deployment
-- No user data is stored by the application itself (check individual engine privacy policies)
+- AI output should still be reviewed for safety-critical domains (medical/legal).
+- The app does not intentionally store user content in a database by default.
